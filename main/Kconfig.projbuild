@@ -1,0 +1,77 @@
+menu "Net Settings"
+    config MAC
+        string "mac addres"
+        default "D7:BB:3E:DC:B4:37"
+        help 
+            mac addres
+
+    config UUID
+        string "unique user identificator"
+        default "98e0e56d-7d76-42a5-8206-e7d44ab985e6"
+        help 
+            unique user identificator
+endmenu
+
+menu "WIFI settings"
+    
+    config WIFI_SSID
+        string "WiFi SSID"
+        default "wifi"
+        help
+            WIFI SSID.
+
+    config WIFI_PASSWORD
+        string "WiFi password"
+        default "password"
+        help
+            WIFI password.
+    
+    config WIFI_RECONNECT_TIMEOUT
+        int "WIFI reconnect timeout"
+        default 2000
+        help
+            WIFI reconnect timeout 
+    
+    config WIFI_SECURITY_STANDART
+        int "wifi auth type: 0 = open, 1 = WEP, ..WPA_PSK, WPA2_PSK, WPA_WPA2_PSK, WPA2_ENTERPRISE, WPA3_PSK, WPA2_WPA3_PSK, OWE"
+        default 3
+        help
+            wifi auth type
+endmenu
+
+menu "MQTT"
+    config MQTT_BROKER_ADDRESS
+        string "MQTT broker address (mqtt://address:port)"
+        default "mqtt://192.168.0.107:1883"
+        help
+            MQTT broker address (mqtt://address:port)
+    config MQTT_BROKER_USER_NAME
+        string "broker username"
+        default "admin"
+        help
+            broker username
+    config MQTT_BROKER_PASSWORD
+        string "broker password"
+        default "public"
+        help
+            broker password
+    config MQTT_KEEP_ALIVE_TIME
+        int "mqtt keep alive time (seconds)"
+        default "60"
+        help
+            mqtt keep alive time (seconds)
+        
+    config CONFIG_SSL_ENABLED
+        bool "is ssl enabled"
+        default false
+        help 
+            is ssl enabled
+
+    config MQTT_QOS_LEVEL
+        int "mqtt qos level, 0, 1 or 2"
+        default 2
+        help 
+            mqtt qos level, 0, 1 or 2
+    endmenu
+
+    
