@@ -1,0 +1,3 @@
+[submodule "main/capnp"]
+	path = main/capnp
+	url = git@github.com:PeterVaselev/capnprotofiles.git

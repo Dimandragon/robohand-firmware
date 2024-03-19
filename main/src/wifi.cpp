@@ -13,7 +13,6 @@
  */
 Wifi *Wifi::p_instance = 0;
 
-auto FW_TAG = CONFIG_WIFI_SSID;
 
 /**
  * @brief WIFI events handler
@@ -31,22 +30,22 @@ void Wifi::wifi_event_handler(void *arg, esp_event_base_t event_base,
     if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_START)
     {
         esp_wifi_connect();
-        ESP_LOGI(FW_TAG, "in wifi heap size: %ld", esp_get_free_heap_size());
+        ESP_LOGI(CONFIG_WIFI_SSID, "in wifi heap size: %ld", esp_get_free_heap_size());
     }
     else if (event_base == WIFI_EVENT && event_id == WIFI_EVENT_STA_DISCONNECTED)
     {
-        vTaskDelay(pdMS_TO_TICKS());
+        vTaskDelay(pdMS_TO_TICKS(CONFIG_WIFI_RECONNECT_TIMEOUT));
         err = esp_wifi_connect();
         if (err != ESP_OK)
         {
-            ESP_LOGE(FW_TAG, "connect to the AP fail: %s", esp_err_to_name(err));
+            ESP_LOGE(CONFIG_WIFI_SSID, "connect to the AP fail: %s", esp_err_to_name(err));
         }
     }
     else if (event_base == IP_EVENT && event_id == IP_EVENT_STA_GOT_IP)
     {
         ip_event_got_ip_t *event = static_cast<ip_event_got_ip_t *>(event_data);
-        ESP_LOGD(FW_TAG, "Connected to SSID: %s", CONFIG_WIFI_SSID);
-        ESP_LOGD(FW_TAG, "ip: " IPSTR, IP2STR(&event->ip_info.ip));
+        ESP_LOGD(CONFIG_WIFI_SSID, "Connected to SSID: %s", CONFIG_WIFI_SSID);
+        ESP_LOGD(CONFIG_WIFI_SSID, "ip: " IPSTR, IP2STR(&event->ip_info.ip));
     }
 }
 
@@ -59,13 +58,13 @@ Wifi::Wifi()
         const uint8_t *mac = (const uint8_t *)CONFIG_MAC;
         esp_err_t err = esp_base_mac_addr_set(mac);
         if (err == ESP_OK)
-            ESP_LOGD(FW_TAG, "MAC address successfully set to %02x:%02x:%02x:%02x:%02x:%02x",
+            ESP_LOGD(CONFIG_WIFI_SSID, "MAC address successfully set to %02x:%02x:%02x:%02x:%02x:%02x",
                      mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
         else
-            ESP_LOGD(FW_TAG, "Failed to set MAC address");
+            ESP_LOGD(CONFIG_WIFI_SSID, "Failed to set MAC address");
     
 
-    ESP_LOGI(FW_TAG, "wifi_init start");
+    ESP_LOGI(CONFIG_WIFI_SSID, "wifi_init start");
     ESP_ERROR_CHECK(esp_netif_init());
     Netif::init(esp_netif_create_default_wifi_sta());
 
@@ -108,7 +107,7 @@ Wifi::Wifi()
     ESP_ERROR_CHECK(esp_wifi_set_config(WIFI_IF_STA, &wifi_config));
     ESP_ERROR_CHECK(esp_wifi_start());
 
-    ESP_LOGI(FW_TAG, "wifi_init finished");
+    ESP_LOGI(CONFIG_WIFI_SSID, "wifi_init finished");
 }
 
 /**
