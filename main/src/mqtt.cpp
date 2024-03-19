@@ -133,7 +133,7 @@ void MqttClient::eventHandler(void *handler_args, esp_event_base_t base,
         MqttClient::getInstance().subscribeTopics();
         break;
     case MQTT_EVENT_DISCONNECTED:
-        ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");\
+        ESP_LOGI(TAG, "MQTT_EVENT_DISCONNECTED");
         vTaskDelay(pdMS_TO_TICKS(CONFIG_WIFI_RECONNECT_TIMEOUT));
         err = esp_mqtt_client_reconnect(MqttClient::getInstance().getClient());
         ESP_LOGE(TAG, "mqtt reconnect returned error %d", err);
