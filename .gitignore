@@ -5,3 +5,4 @@ sdkconfig.old
 .vscode/
 .xmake
 managed_components/
+.cache/

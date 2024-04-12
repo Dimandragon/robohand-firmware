@@ -1,12 +1,10 @@
 #include "mqtt.hpp"
 
-#include "netif.hpp"
-
-
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 #include "driver/gpio.h"
+#include "notifications.pb.h"
 
 #include <string>
 
@@ -321,34 +319,10 @@ int MqttClient::send(const char *topic, const char *data, int len, int qos, int 
  */
 void MqttClient::sendInitMessage()
 {
-    /*EventUnit processing_event;
-    fdb_err_t err;
-
-    // Send start event
-    EventUnit start_event = createEventUnit(NOTIFICATIONS__EVENT_TYPE__STATE_STARTED);
-    err = EventDatabase::getInstance().insert(&start_event);
-    if (err != FDB_NO_ERR)
-    {
-        ESP_LOGE(TAG, "Error insert start event to events database, in MqttClient::sendInitMessage: %d", (int)err);
-    }
-    this->send(this->eventTypeToTopic(start_event.type), static_cast<const char *>(start_event.data),
-               start_event.data_len, ConfigDatabase::getInstance().getMqttQos(), 0);
-    free(start_event.data);
-
-    // Send monitoring
-    Monitoring::sendMonitoring(NULL);
-
-    // Send sync processing event
-    processing_event = createEventUnit(NOTIFICATIONS__EVENT_TYPE__ACS_USER_SYNC_PROCESSING);
-    err = EventDatabase::getInstance().insert(&processing_event);
-    if (err != FDB_NO_ERR)
-    {
-        ESP_LOGE(TAG, "Error insert sync event to events database, in MqttClient::sendInitMessage: %d", (int)err);
-    }
-    this->send(this->eventTypeToTopic(processing_event.type), static_cast<const char *>(processing_event.data),
-               processing_event.data_len, ConfigDatabase::getInstance().getMqttQos(), 0);
-    free(processing_event.data);*/
-    //todo #2
+    
+    //this->send(this->eventTypeToTopic(start_event.type), static_cast<const char *>(start_event.data),
+    //           start_event.data_len, ConfigDatabase::getInstance().getMqttQos(), 0);
+    
 }
 
 /**

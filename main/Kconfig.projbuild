@@ -37,6 +37,11 @@ menu "WIFI settings"
         default 3
         help
             wifi auth type
+
+    config WIFI_MAXIMUM_CONNECT_RETRY
+        int "maximum connecting retry"
+        default 10
+        help maximum connecting retry
 endmenu
 
 menu "MQTT"

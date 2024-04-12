@@ -1,7 +1,7 @@
 file(GLOB SOURCE_FILES
     src/*.cpp
     main.cpp
-    proto/protobuf/*.cc
+    proto/protobuf/*/*.cc
 )
 
 idf_component_register(
@@ -9,7 +9,14 @@ idf_component_register(
                 ${SOURCE_FILES}
             INCLUDE_DIRS 
                 "include"
-                "proto/protobuf")
+                "proto/protobuf"
+                "proto/protobuf/notifications"
+                "proto/protobuf/potentiometer"
+                "proto/protobuf/servo"
+                "proto/protobuf/shared"
+                "proto/protobuf/straingauge"
+                "proto/protobuf/commands"
+                "proto/protobuf/imu")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++23 -Wno-format -Wno-missing-field-initializers -Wno-write-strings -Wno-return-type -Wno-reorder")
 
