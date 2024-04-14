@@ -1,10 +1,12 @@
 #include "mqtt.hpp"
-
+#include "config.hpp"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/timers.h"
 #include "driver/gpio.h"
 #include "notifications.pb.h"
+#include "commands.pb.h"
+#include "internal_api.hpp"
 
 #include <string>
 
@@ -42,42 +44,6 @@ MqttClient::MqttClient()
     mqtt_cfg.credentials.authentication.password = password.c_str();
     mqtt_cfg.session.keepalive = CONFIG_MQTT_KEEP_ALIVE_TIME;
     mqtt_cfg.buffer.size = 20 * 1024;
-
-    // If SSL enabled
-    /*if (CONFIG_SSL_ENABLED)
-    {
-        // Copy server cert to class var
-        std::string server_cert = ConfigDatabase::getInstance().getMqttServerSslCert();
-        this->server_cert = (char *)malloc(server_cert.size() + 1);
-        strlcpy(this->server_cert, server_cert.c_str(), server_cert.size());
-        this->server_cert[server_cert.size()] = '\0';
-
-        // Copy client cert to class var
-        std::string client_cert = ConfigDatabase::getInstance().getMqttClientSslCert();
-        this->client_cert = (char *)malloc(client_cert.size() + 1);
-        strlcpy(this->client_cert, client_cert.c_str(), client_cert.size());
-        this->client_cert[client_cert.size()] = '\0';
-
-        // Copy client key to class var
-        std::string key = ConfigDatabase::getInstance().getMqttClientSslPrivateKey();
-        this->key = (char *)malloc(key.size() + 1);
-        strlcpy(this->key, key.c_str(), key.size());
-        this->key[key.size()] = '\0';
-
-        mqtt_cfg.broker.verification.skip_cert_common_name_check = true;
-
-        // Set certificate
-        mqtt_cfg.broker.verification.certificate = static_cast<const char *>(this->server_cert);
-        mqtt_cfg.broker.verification.certificate_len = server_cert.length() + 1;
-
-        // Set client certificate
-        mqtt_cfg.credentials.authentication.certificate = static_cast<const char *>(this->client_cert);
-        mqtt_cfg.credentials.authentication.certificate_len = client_cert.length() + 1;
-
-        // Set client key
-        mqtt_cfg.credentials.authentication.key = static_cast<const char *>(this->key);
-        mqtt_cfg.credentials.authentication.key_len = key.length() + 1;
-    }*/
 
     this->mqtt_client = esp_mqtt_client_init(&mqtt_cfg);
     err = esp_mqtt_client_start(this->mqtt_client);
@@ -125,8 +91,6 @@ void MqttClient::eventHandler(void *handler_args, esp_event_base_t base,
         // Send init message
         MqttClient::getInstance().sendInitMessage();
         // Send not sended events
-        //xTaskCreate(EventDatabase::sendNotSendedEvents, "sendnotsended", 5 * 1024,
-        //            static_cast<void *>(&(EventDatabase::getInstance())), 7, NULL);
         // Subscribe MQTT topics
         MqttClient::getInstance().subscribeTopics();
         break;
@@ -177,104 +141,45 @@ void MqttClient::dataHandler(char *topic, int topic_len, char *data, int data_le
 
     std::string mqtt_topic(topic, topic_len);
 
+    std::string message_str(data, data_len);
+
     // Change door mode
-    /*if (mqtt_topic == FW_MQTT_TOPIC_CONTROL_DOOR_MODE)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_CONTROL_DOOR_MODE);
-
-        if (!Door::isNotInited())
-            Door::getInstance().actionChangeMode(data, data_len);
+    if (mqtt_topic == MQTT_TOPIC_COMMANDS_SERVO_GO_TO_ANGLE){
+        Commands::ServoGoToAngle message;
+        message.ParseFromString(message_str);
+        std::cout << message.DebugString() << std::endl;
+        CommandsQueue::push(message);
     }
-    // Users sync
-    else if (mqtt_topic == FW_MQTT_TOPIC_BACKEND_ACS_SYNC)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_BACKEND_ACS_SYNC);
-
-        err = esp_mqtt_client_unsubscribe(MqttClient::getInstance().getClient(),
-                                          FW_MQTT_TOPIC_BACKEND_ACS_SYNC);
-        ESP_LOGD(TAG, "unsubscribe topic %s, %d",
-                 FW_MQTT_TOPIC_BACKEND_ACS_SYNC, static_cast<int>(err));
-        UserDatabase::getInstance().actionSyncUsers(data, data_len);
+    else if (mqtt_topic == MQTT_TOPIC_COMMANDS_SERVO_LOCK){
+        Commands::ServoLock message;
+        message.ParseFromString(message_str);
+        std::cout << message.DebugString() << std::endl;
+        CommandsQueue::push(message);
     }
-    // Create new user
-    else if (mqtt_topic == FW_MQTT_TOPIC_BACKEND_ACS_USER_CREATE)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_BACKEND_ACS_USER_CREATE);
-        UserDatabase::getInstance().actionCreateUser(data, data_len);
+    else if (mqtt_topic == MQTT_TOPIC_COMMANDS_SERVO_UNLOCK){
+        Commands::ServoUnLock message;
+        message.ParseFromString(message_str);
+        std::cout << message.DebugString() << std::endl;
+        CommandsQueue::push(message);
     }
-    // Update old user
-    else if (mqtt_topic == FW_MQTT_TOPIC_BACKEND_ACS_USER_UPDATE)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_BACKEND_ACS_USER_UPDATE);
-        UserDatabase::getInstance().actionUpdateUser(data, data_len);
+    else if (mqtt_topic == MQTT_TOPIC_COMMANDS_SERVO_SMOOTHLY_MOVE){
+        Commands::ServoSmoothlyMove message;
+        message.ParseFromString(message_str);
+        std::cout << message.DebugString() << std::endl;
+        CommandsQueue::push(message);
     }
-    // Delete old user
-    else if (mqtt_topic == FW_MQTT_TOPIC_BACKEND_ACS_USER_DELETE)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_BACKEND_ACS_USER_DELETE);
-        UserDatabase::getInstance().actionDeleteUser(data, data_len);
+    else if (mqtt_topic == MQTT_TOPIC_COMMANDS_MOVE_TARGET_PRESSURE){
+        Commands::MoveToTargetPressure message;
+        message.ParseFromString(message_str);
+        std::cout << message.DebugString() << std::endl;
+        CommandsQueue::push(message);
     }
-    // Ping
-    else if (mqtt_topic == FW_MQTT_TOPIC_MONITORING_CONNECTION_PING)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_MONITORING_CONNECTION_PING);
-        MqttClient::getInstance().send(FW_MQTT_TOPIC_MONITORING_CONNECTION_PONG, NULL,
-                                       0, ConfigDatabase::getInstance().getMqttQos(), 0);
+    else if (mqtt_topic == MQTT_TOPIC_COMMANDS_HOLD_GESTURE){
+        Commands::HoldGesture message;
+        message.ParseFromString(message_str);
+        std::cout << message.DebugString() << std::endl;
+        CommandsQueue::push(message);
     }
-    // Monitoring
-    else if (mqtt_topic == FW_MQTT_TOPIC_MONITORING_CONTROLLER_REQUEST)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_MONITORING_CONTROLLER_REQUEST);
-        Monitoring::sendMonitoring(NULL);
-    }
-    // Set config
-    else if (mqtt_topic == FW_MQTT_TOPIC_CONFIG_SET)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_CONFIG_SET);
-        ConfigDatabase::getInstance().actionUpdateConfig(data, data_len);
-    }
-    // Reset config
-    else if (mqtt_topic == FW_MQTT_TOPIC_CONFIG_RESET)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_CONFIG_RESET);
-        ConfigDatabase::getInstance().actionResetConfig(data, data_len);
-    }
-    // Get config
-    else if (mqtt_topic == FW_MQTT_TOPIC_CONFIG_GET_REQUEST)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_CONFIG_GET_REQUEST);
-        ConfigDatabase::getInstance().actionSendConfig();
-    }
-    // Firmware update
-    else if (mqtt_topic == FW_MQTT_TOPIC_OTA_REQUEST)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_OTA_REQUEST);
-        actionOTAfromHTTP(data, data_len);
-    }
-    // Access request response
-    else if (mqtt_topic == FW_MQTT_TOPIC_BACKEND_ACS_AUTH_ACCESS_RESPONSE)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_BACKEND_ACS_AUTH_ACCESS_RESPONSE);
-
-        if (!Messenger::isNotInited())
-            Messenger::getInstance().actionAddNewAccess(data, data_len);
-    }
-    // Camera face detected
-    else if (mqtt_topic == FW_MQTT_TOPIC_NOTIFY_CAMERA_FACE_DETECTED)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_NOTIFY_CAMERA_FACE_DETECTED);
-
-        if (!Camera::isNotInited())
-            Camera::getInstance().addNewDetectionFromProto(data, data_len);
-    }
-    // Unloading events
-    else if (mqtt_topic == FW_MQTT_TOPIC_NOTIFY_UNLOADING_REQUEST)
-    {
-        ESP_LOGD(TAG, FW_MQTT_TOPIC_NOTIFY_UNLOADING_REQUEST);
-        xTaskCreate(EventDatabase::unloadingEvents, "unloading", 5 * 1024,
-                    static_cast<void *>(&(EventDatabase::getInstance())), 7, NULL);
-    }*/
-    //todo #1
 }
 
 /**
@@ -319,10 +224,12 @@ int MqttClient::send(const char *topic, const char *data, int len, int qos, int 
  */
 void MqttClient::sendInitMessage()
 {
+    Notifications::Notification notification;
+    notification.set_notification(Notifications::NotificationType::connected);
+    std::string message;
+    notification.SerializeToString(&message);
     
-    //this->send(this->eventTypeToTopic(start_event.type), static_cast<const char *>(start_event.data),
-    //           start_event.data_len, ConfigDatabase::getInstance().getMqttQos(), 0);
-    
+    this->send(MQTT_TOPIC_NOTIFICATIONS, message.data(), message.size(), CONFIG_MQTT_QOS_LEVEL, 0);
 }
 
 /**
@@ -333,36 +240,13 @@ void MqttClient::subscribeTopics()
     int msg_id;
 
     std::string topics[] = {
-        /*
-        // Ping topic
-        std::string(FW_MQTT_TOPIC_MONITORING_CONNECTION_PING),
-        // Chande door mode
-        std::string(FW_MQTT_TOPIC_CONTROL_DOOR_MODE),
-        // Users sync topic
-        std::string(FW_MQTT_TOPIC_BACKEND_ACS_SYNC),
-        // User create topic
-        std::string(FW_MQTT_TOPIC_BACKEND_ACS_USER_CREATE),
-        // User update topic
-        std::string(FW_MQTT_TOPIC_BACKEND_ACS_USER_UPDATE),
-        // User delete topic
-        std::string(FW_MQTT_TOPIC_BACKEND_ACS_USER_DELETE),
-        // Monitoring controller
-        std::string(FW_MQTT_TOPIC_MONITORING_CONTROLLER_REQUEST),
-        // Set config
-        std::string(FW_MQTT_TOPIC_CONFIG_SET),
-        // Reset config
-        std::string(FW_MQTT_TOPIC_CONFIG_RESET),
-        // Get config
-        std::string(FW_MQTT_TOPIC_CONFIG_GET_REQUEST),
-        // Update firmware
-        std::string(FW_MQTT_TOPIC_OTA_REQUEST),
-        // Access request response
-        std::string(FW_MQTT_TOPIC_BACKEND_ACS_AUTH_ACCESS_RESPONSE),
-        // Camera face detected
-        std::string(FW_MQTT_TOPIC_NOTIFY_CAMERA_FACE_DETECTED),
-        // Request for unloading events
-        std::string(FW_MQTT_TOPIC_NOTIFY_UNLOADING_REQUEST),
-        */
+        std::string(MQTT_TOPIC_COMMANDS),
+        std::string(MQTT_TOPIC_COMMANDS_SERVO_GO_TO_ANGLE),
+        std::string(MQTT_TOPIC_COMMANDS_SERVO_LOCK),
+        std::string(MQTT_TOPIC_COMMANDS_SERVO_UNLOCK),
+        std::string(MQTT_TOPIC_COMMANDS_SERVO_SMOOTHLY_MOVE),
+        std::string(MQTT_TOPIC_COMMANDS_MOVE_TARGET_PRESSURE),
+        std::string(MQTT_TOPIC_COMMANDS_HOLD_GESTURE),
     };
     //todo #0
 
@@ -384,99 +268,6 @@ void MqttClient::subscribeTopics()
  * @return char* Topic
  */
 
-/*
-char *MqttClient::eventTypeToTopic(Notifications__EventType type)
-{
-    switch (type)
-    {
-    case NOTIFICATIONS__EVENT_TYPE__STATE_CONNECTED:
-        return FW_MQTT_TOPIC_NOTIFY_STATE_CONNECTED;
-    case NOTIFICATIONS__EVENT_TYPE__STATE_STARTED:
-        return FW_MQTT_TOPIC_NOTIFY_STATE_STARTED;
-    case NOTIFICATIONS__EVENT_TYPE__DOOR_CLOSED:
-        return FW_MQTT_TOPIC_NOTIFY_DOOR_CLOSED;
-    case NOTIFICATIONS__EVENT_TYPE__DOOR_OPENED:
-        return FW_MQTT_TOPIC_NOTIFY_DOOR_OPENED;
-    case NOTIFICATIONS__EVENT_TYPE__DOOR_HOLD_AT_CLOSING:
-        return FW_MQTT_TOPIC_NOTIFY_DOOR_HOLD_AT_CLOSING;
-    case NOTIFICATIONS__EVENT_TYPE__DOOR_HOLD_AT_OPENING:
-        return FW_MQTT_TOPIC_NOTIFY_DOOR_HOLD_AT_OPENING;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_USER_SYNC_PROCESSING:
-        return FW_MQTT_TOPIC_ACS_NOTIFY_USER_SYNC_PROCESSING;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_USER_SYNC_ERROR:
-        return FW_MQTT_TOPIC_ACS_NOTIFY_USER_SYNC_ERROR;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_USER_SYNC_SUCCESS:
-        return FW_MQTT_TOPIC_ACS_NOTIFY_USER_SYNC_SUCCESS;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_USER_CREATE:
-        return FW_MQTT_TOPIC_NOTIFY_ACS_USER_CREATE;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_USER_UPDATE:
-        return FW_MQTT_TOPIC_NOTIFY_ACS_USER_UPDATE;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_USER_DELETE:
-        return FW_MQTT_TOPIC_NOTIFY_ACS_USER_DELETE;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_AUTH_PROCESSING:
-        return FW_MQTT_TOPIC_NOTIFY_ACS_AUTH_PROCESSING;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_AUTH_SUCCESS:
-        return FW_MQTT_TOPIC_NOTIFY_ACS_AUTH_SUCCESS;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_AUTH_FAILED:
-        return FW_MQTT_TOPIC_NOTIFY_ACS_AUTH_FAILED;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_AUTH_ERROR:
-        return FW_MQTT_TOPIC_NOTIFY_ACS_AUTH_ERROR;
-    case NOTIFICATIONS__EVENT_TYPE__ACS_AUTH_ACCESS_REQUEST:
-        return FW_MQTT_TOPIC_NOTIFY_ACS_AUTH_ACCESS_REQUEST;
-    case NOTIFICATIONS__EVENT_TYPE__MODULE_LOCK_LOCK:
-        return FW_MQTT_TOPIC_MODULE_LOCK_LOCK;
-    case NOTIFICATIONS__EVENT_TYPE__MODULE_LOCK_TRIGGER:
-        return FW_MQTT_TOPIC_MODULE_LOCK_TRIGGER;
-    case NOTIFICATIONS__EVENT_TYPE__MODULE_LOCK_HANDLE:
-        return FW_MQTT_TOPIC_MODULE_LOCK_HANDLE;
-    case NOTIFICATIONS__EVENT_TYPE__MODULE_LOCK_CYLINDER:
-        return FW_MQTT_TOPIC_MODULE_LOCK_CYLINDER;
-    case NOTIFICATIONS__EVENT_TYPE__MODULE_LOCK_ERROR:
-        return FW_MQTT_TOPIC_MODULE_LOCK_ERROR;
-    case NOTIFICATIONS__EVENT_TYPE__MODULE_LOCK_CLOSED:
-        return FW_MQTT_TOPIC_MODULE_LOCK_CLOSED;
-    case NOTIFICATIONS__EVENT_TYPE__CONFIG_ERROR:
-        return FW_MQTT_TOPIC_NOTIFY_CONFIG_ERROR;
-    case NOTIFICATIONS__EVENT_TYPE__CONFIG_SUCCESS:
-        return FW_MQTT_TOPIC_NOTIFY_CONFIG_SUCCESS;
-    case NOTIFICATIONS__EVENT_TYPE__CONFIG_CONTROLLER_SUCCESS:
-        return FW_MQTT_TOPIC_NOTIFY_CONFIG_SUCCESS;
-    case NOTIFICATIONS__EVENT_TYPE__FIRMWARE_UPDATE_SUCCESS:
-        return FW_MQTT_TOPIC_NOTIFY_OTA_SUCCESS;
-    case NOTIFICATIONS__EVENT_TYPE__FIRMWARE_UPDATE_ERROR:
-        return FW_MQTT_TOPIC_NOTIFY_OTA_ERROR;
-    case NOTIFICATIONS__EVENT_TYPE__INTEGRATION_CALL_SECURITY:
-        return FW_MQTT_TOPIC_NOTIFY_INTEGRATION_CALL_SECURITY;
-    case NOTIFICATIONS__EVENT_TYPE__INTEGRATION_CALL_EMPLOYEE:
-        return FW_MQTT_TOPIC_NOTIFY_INTEGRATION_CALL_EMPLOYEE;
-    case NOTIFICATIONS__EVENT_TYPE__INTEGRATION_OPEN_DOOR:
-        return FW_MQTT_TOPIC_NOTIFY_INTEGRATION_OPEN;
-    case NOTIFICATIONS__EVENT_TYPE__INTEGRATION_CLOSE_DOOR:
-        return FW_MQTT_TOPIC_NOTIFY_INTEGRATION_CLOSE;
-    case NOTIFICATIONS__EVENT_TYPE__INTEGRATION_IN_ENTRY_REQUEST:
-        return FW_MQTT_TOPIC_NOTIFY_INTEGRATION_IN_ENTRY_REQUEST;
-    case NOTIFICATIONS__EVENT_TYPE__INTEGRATION_OUT_ENTRY_REQUEST:
-        return FW_MQTT_TOPIC_NOTIFY_INTEGRATION_OUT_ENTRY_REQUEST;
-    case NOTIFICATIONS__EVENT_TYPE__ALARM_NORMALIZED:
-        return FW_MQTT_TOPIC_NOTIFY_ALARM_NORMALIZED;
-    case NOTIFICATIONS__EVENT_TYPE__ALARM_TRIGGERED:
-        return FW_MQTT_TOPIC_NOTIFY_ALARM_TRIGGERED;
-    case NOTIFICATIONS__EVENT_TYPE__TAMPER_NORMALIZED:
-        return FW_MQTT_TOPIC_NOTIFY_TAMPER_NORMALIZED;
-    case NOTIFICATIONS__EVENT_TYPE__TAMPER_TRIGGERED:
-        return FW_MQTT_TOPIC_NOTIFY_TAMPER_TRIGGERED;
-    case NOTIFICATIONS__EVENT_TYPE__MONITORING_SENDED:
-        return FW_MQTT_TOPIC_MONITORING_CONTROLLER;
-    case NOTIFICATIONS__EVENT_TYPE__MULTIPLE_PASS:
-        return FW_MQTT_TOPIC_NOTIFY_MULTIPLE_PASS;
-    case NOTIFICATIONS__EVENT_TYPE__CHANGE_MODE:
-        return FW_MQTT_TOPIC_NOTIFY_MODE;
-    default:
-        return "";
-    }
-}
-//todo
-*/
 
 /**
  * @brief Get MqttClient instance

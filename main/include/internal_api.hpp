@@ -64,7 +64,7 @@ class HandState{
 
 public: 
     template<typename T>
-    T & getState(int idx){
+    static T & getState(int idx){
         if constexpr(std::is_same_v<T, Imu::IMU>){
             return imus[idx];
         }
@@ -83,21 +83,21 @@ public:
     }
 
     template<typename T>
-    const T & getState(int idx) const {
+    static int getStateExemplarsCount(){
         if constexpr(std::is_same_v<T, Imu::IMU>){
-            return imus[idx];
+            return imus.size();
         }
         else if constexpr(std::is_same_v<T, Imu::ResultIMU>){
-            return processed_imus[idx];
+            return processed_imus.size();
         }
         else if constexpr(std::is_same_v<T, Potentiometer::Potentiometer>){
-            return potentiometers[idx];
+            return potentiometers.size();
         }
         else if constexpr(std::is_same_v<T, Straingauge::StrainGuage>){
-            return straingauges[idx];
+            return straingauges.size();
         }
         else if constexpr(std::is_same_v<T, Servo::Servo>){
-            return servos[idx];
+            return servos.size();
         }
     }
 

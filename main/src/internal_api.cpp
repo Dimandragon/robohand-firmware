@@ -1,4 +1,4 @@
-#include "interanl_api.hpp"
+#include "internal_api.hpp"
 
 SmallMutex HandState::mutex = SmallMutex();
 

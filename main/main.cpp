@@ -4,7 +4,8 @@
 #include "wifi.hpp"
 #include "mqtt.hpp"
 #include "nvs.hpp"
-#include "interanl_api.hpp"
+#include "internal_api.hpp"
+#include "middleware.hpp"
 
 const char * TAG = "NVS_TAG";
 
@@ -27,9 +28,11 @@ extern "C" void app_main(void)
     ESP_LOGI(TAG, "nvs_flash_init: 0x%04x", ret);
     wifi_init_sta();
     HandState::init(3, 1, 21, 5, 6); 
-    
+
     //todo parameters
     MqttClient::init();
+    MiddleWare::init();
+    
     while (true)
     {
         //ESP_LOGI(TAG, "Heap free size:%d", xPortGetFreeHeapSize());
