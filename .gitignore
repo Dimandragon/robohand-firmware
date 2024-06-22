@@ -6,3 +6,4 @@ sdkconfig.old
 .xmake
 managed_components/
 .cache/
+components/
