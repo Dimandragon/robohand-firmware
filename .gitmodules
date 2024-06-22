@@ -1,3 +1,6 @@
 [submodule "main/proto"]
 	path = main/proto
 	url = https://github.com/Dimandragon/robohand-proto.git
+[submodule "main/crc"]
+	path = main/crc
+	url = https://github.com/d-bahr/CRCpp
