@@ -1,7 +1,15 @@
 file(GLOB SOURCE_FILES
     src/*.cpp
     main.cpp
-    proto/protobuf/*/*.cc
+    proto/cpp/*.cc
+    Arduino-fork/cores/esp32/*.c
+    Arduino-fork/cores/esp32/*.cpp
+    Arduino-fork/cores/esp32/libb64/*.c
+    Arduino-fork/cores/esp32/libb64/*.cpp
+    Arduino-fork/cores/esp32/apps/sntp/*.c
+    Arduino-fork/cores/esp32/apps/sntp/*.cpp
+    Arduino-fork/libraries/SPI/src/*.c
+    Arduino-fork/libraries/SPI/src/*.cpp
 )
 
 idf_component_register(
@@ -9,14 +17,15 @@ idf_component_register(
                 ${SOURCE_FILES}
             INCLUDE_DIRS 
                 "include"
-                "proto/protobuf"
-                "proto/protobuf/notifications"
-                "proto/protobuf/potentiometer"
-                "proto/protobuf/servo"
-                "proto/protobuf/shared"
-                "proto/protobuf/straingauge"
-                "proto/protobuf/commands"
-                "proto/protobuf/imu")
+                "proto/cpp"
+                "crc/inc"
+                "Arduino-fork"
+                "Arduino-fork/cores/esp32"
+                "Arduino-fork/cores/esp32/libb64"
+                "Arduino-fork/cores/esp32/apps/sntp"
+                "Arduino-fork/libraries/SPI/src"
+                "Arduino-fork/variants/esp32s3"
+            )
 
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=gnu++23 -Wno-format -Wno-missing-field-initializers -Wno-write-strings -Wno-return-type -Wno-reorder")
 

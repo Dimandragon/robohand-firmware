@@ -13,8 +13,7 @@
  * File description: Definitions and methods for the MUX74HC4067 library
  */
 
-#ifndef MUX74HC4067_h
-#define MUX74HC4067_h
+#pragma once
 
 #include <Arduino.h>
 
@@ -23,6 +22,7 @@
 
 #define DISABLED 0
 #define ENABLED 1
+#include <cstdint>
 
 /**
  * @brief Interfaces the 74HC4067 multiplexers/demultiplexers.
@@ -122,5 +122,3 @@ class MUX74HC4067 {
   int8_t control_pin_[4];
   uint8_t current_channel_;
 };
-
-#endif  // MUX74HC4067

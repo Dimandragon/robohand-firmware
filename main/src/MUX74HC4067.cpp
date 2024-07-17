@@ -1,19 +1,27 @@
-/**
- * Name: MUX74HC4067
- * Author: Nick Lamprianidis { nlamprian@gmail.com }
- * Version: 1.0
- * Description: A library for interfacing the 74HC4067
- *				multiplexers/demultiplexers
- * Source: https://github.com/nlamprian/MUX74HC4067
- * License: Copyright (c) 2014 Nick Lamprianidis
- *          This library is licensed under the MIT license
- *          http://www.opensource.org/licenses/mit-license.php
- *
- * Filename: MUX74HC4067.cpp
- * File description: Implementations of methods for the MUX74HC4067 library
- */
-
 #include "MUX74HC4067.hpp"
+#include "driver/gpio.h"
+#include "esp_err.h"
+#include "hal/gpio_types.h"
+
+
+/*
+constexpr bool HIGH = true;
+constexpr bool LOW = false;
+constexpr bool OUTPUT = true;
+constexpr bool INPUT = false;
+
+esp_err_t pinMode(uint8_t gpio, bool direction){
+  if (direction) {
+    return gpio_set_direction((gpio_num_t)gpio, GPIO_MODE_OUTPUT);
+  }
+  else{
+    return gpio_set_direction((gpio_num_t)gpio, GPIO_MODE_INPUT);
+  }
+}
+esp_err_t digitalWrite(uint8_t gpio, bool level){
+  return gpio_set_level((gpio_num_t)gpio, level);
+}*/
+
 
 MUX74HC4067::MUX74HC4067(uint8_t en, int8_t s0, int8_t s1, int8_t s2, int8_t s3)
     : enable_pin_(en),
@@ -58,7 +66,7 @@ void MUX74HC4067::disable() {
 }
 
 void MUX74HC4067::signalPin(uint8_t sig, uint8_t mode, uint8_t type) {
-  signal_pin_ = sig;
+  signal_pin_ = sig; //signal pin hear
 
   if (mode == INPUT) {
     signal_mode_ = INPUT;
